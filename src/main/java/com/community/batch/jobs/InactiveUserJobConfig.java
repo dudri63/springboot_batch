@@ -4,9 +4,10 @@ import com.community.batch.domain.User;
 import com.community.batch.domain.enums.UserStatus;
 import com.community.batch.jobs.readers.QueueItemReader;
 import com.community.batch.repository.UserRepository;
-
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -18,33 +19,40 @@ import org.springframework.context.annotation.Configuration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import lombok.AllArgsConstructor;
-
 /**
  * Created by KimYJ on 2018-03-07.
  */
-@AllArgsConstructor
+
 @Configuration
+@EnableBatchProcessing
+@RequiredArgsConstructor
 public class InactiveUserJobConfig {
 
-    private UserRepository userRepository;
+    private final JobBuilderFactory jobBuilderFactory;
+    private final StepBuilderFactory stepBuilderFactory;
+
+    private final UserRepository userRepository;
 
     @Bean
-    public Job inactiveUserJob(JobBuilderFactory jobBuilderFactory, Step inactiveJobStep) {
+    public Job inactiveUserJob() {
         return jobBuilderFactory.get("inactiveUserJob")
                 .preventRestart()
-                .start(inactiveJobStep)
+                .start(inactiveJobStep())
                 .build();
     }
 
     @Bean
-    public Step inactiveJobStep(StepBuilderFactory stepBuilderFactory) {
+    public Step inactiveJobStep() {
         return stepBuilderFactory.get("inactiveUserStep")
-                .<User, User> chunk(10)
+                .<User, User>chunk(10)
                 .reader(inactiveUserReader())
                 .processor(inactiveUserProcessor())
                 .writer(inactiveUserWriter())
                 .build();
+
+//        return stepBuilderFactory.get("inactiveUserStep")
+//                .tasklet(new MessageTasklet("World!")) // 실행하는 Tasklet을 지정
+//                .build();
     }
 
     @Bean
